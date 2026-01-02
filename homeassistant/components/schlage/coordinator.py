@@ -16,7 +16,13 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
+from .const import (
+    DOMAIN,
+    LOGGER,
+    MAX_RETRIES,
+    RETRY_DELAY,
+    UPDATE_INTERVAL,
+)
 
 
 @dataclass
@@ -48,6 +54,8 @@ class SchlageDataUpdateCoordinator(DataUpdateCoordinator[SchlageData]):
         config_entry: SchlageConfigEntry,
         username: str,
         api: Schlage,
+        retry_delay: int = RETRY_DELAY,
+        max_retries: int = MAX_RETRIES,
     ) -> None:
         """Initialize the class."""
         super().__init__(
@@ -59,26 +67,49 @@ class SchlageDataUpdateCoordinator(DataUpdateCoordinator[SchlageData]):
         )
         self.data = SchlageData(locks={})
         self.api = api
+        self.retry_delay = retry_delay
+        self.max_retries = max_retries
         self.new_locks_callbacks: list[Callable[[dict[str, LockData]], None]] = []
         self.async_add_listener(self._add_remove_locks)
 
     async def _async_update_data(self) -> SchlageData:
-        """Fetch the latest data from the Schlage API."""
-        try:
-            locks = await self.hass.async_add_executor_job(self.api.locks)
-        except NotAuthorizedError as ex:
-            raise ConfigEntryAuthFailed from ex
-        except SchlageError as ex:
-            raise UpdateFailed(
-                translation_domain=DOMAIN, translation_key="schlage_refresh_failed"
-            ) from ex
-        lock_data = await asyncio.gather(
-            *(
-                self.hass.async_add_executor_job(self._get_lock_data, lock)
-                for lock in locks
-            )
-        )
-        return SchlageData(locks={ld.lock.device_id: ld for ld in lock_data})
+        """Fetch the latest data from the Schlage API with retry logic."""
+        last_exception = None
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                locks = await self.hass.async_add_executor_job(self.api.locks)
+                lock_data = await asyncio.gather(
+                    *(
+                        self.hass.async_add_executor_job(self._get_lock_data, lock)
+                        for lock in locks
+                    )
+                )
+                return SchlageData(locks={ld.lock.device_id: ld for ld in lock_data})
+            except NotAuthorizedError as ex:
+                # Don't retry auth errors
+                raise ConfigEntryAuthFailed from ex
+            except SchlageError as ex:
+                last_exception = ex
+                if attempt < self.max_retries:
+                    LOGGER.debug(
+                        "Fetch attempt %d/%d failed, retrying in %d seconds: %s",
+                        attempt + 1,
+                        self.max_retries + 1,
+                        self.retry_delay,
+                        ex,
+                    )
+                    await asyncio.sleep(self.retry_delay)
+                else:
+                    LOGGER.debug(
+                        "All %d fetch attempts failed",
+                        self.max_retries + 1,
+                    )
+        
+        # All retries exhausted
+        raise UpdateFailed(
+            translation_domain=DOMAIN, translation_key="schlage_refresh_failed"
+        ) from last_exception
 
     def _get_lock_data(self, lock: Lock) -> LockData:
         logs: list[LockLog] = []

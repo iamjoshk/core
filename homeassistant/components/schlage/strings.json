@@ -25,6 +25,17 @@
       }
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "retry_delay": "Retry delay (seconds)",
+          "max_retries": "Maximum retries"
+        },
+        "description": "Configure retry behavior when fetching lock data fails"
+      }
+    }
+  },
   "entity": {
     "binary_sensor": {
       "keypad_disabled": {

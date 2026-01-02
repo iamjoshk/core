@@ -9,10 +9,18 @@ import pyschlage
 from pyschlage.exceptions import NotAuthorizedError
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import callback
 
-from .const import DOMAIN, LOGGER
+from .const import (
+    CONF_MAX_RETRIES,
+    CONF_RETRY_DELAY,
+    MAX_RETRIES,
+    RETRY_DELAY,
+    DOMAIN,
+    LOGGER,
+)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str}
@@ -24,6 +32,12 @@ class SchlageConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Schlage."""
 
     VERSION = 1
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return SchlageOptionsFlowHandler(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -92,6 +106,36 @@ class SchlageConfigFlow(ConfigFlow, domain=DOMAIN):
             step_id="reauth_confirm",
             data_schema=STEP_REAUTH_DATA_SCHEMA,
             errors=errors,
+        )
+
+class SchlageOptionsFlowHandler(OptionsFlow):
+    """Handle Schlage options."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_RETRY_DELAY,
+                        default=self.config_entry.options.get(
+                            CONF_RETRY_DELAY, RETRY_DELAY
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                    vol.Optional(
+                        CONF_MAX_RETRIES,
+                        default=self.config_entry.options.get(
+                            CONF_MAX_RETRIES, MAX_RETRIES
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=0, max=5)),
+                }
+            ),
         )
 
 
