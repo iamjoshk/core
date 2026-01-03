@@ -89,7 +89,7 @@ class SchlageDataUpdateCoordinator(DataUpdateCoordinator[SchlageData]):
             except NotAuthorizedError as ex:
                 # Don't retry auth errors
                 raise ConfigEntryAuthFailed from ex
-            except SchlageError as ex:
+            except Exception as ex:
                 last_exception = ex
                 if attempt < self.max_retries:
                     LOGGER.debug(
