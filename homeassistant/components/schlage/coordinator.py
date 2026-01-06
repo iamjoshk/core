@@ -67,8 +67,8 @@ class SchlageDataUpdateCoordinator(DataUpdateCoordinator[SchlageData]):
         )
         self.data = SchlageData(locks={})
         self.api = api
-        self.retry_delay = retry_delay
-        self.max_retries = max_retries
+        self.retry_delay = int(retry_delay)
+        self.max_retries = int(max_retries)
         self.new_locks_callbacks: list[Callable[[dict[str, LockData]], None]] = []
         self.async_add_listener(self._add_remove_locks)
 
