@@ -12,6 +12,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import callback
+from homeassistant.helpers import selector
 
 from .const import (
     CONF_MAX_RETRIES,
@@ -127,13 +128,26 @@ class SchlageOptionsFlowHandler(OptionsFlow):
                         default=self.config_entry.options.get(
                             CONF_RETRY_DELAY, RETRY_DELAY
                         ),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=30)),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1,
+                            max=30,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="seconds",
+                        )
+                    ),
                     vol.Optional(
                         CONF_MAX_RETRIES,
                         default=self.config_entry.options.get(
                             CONF_MAX_RETRIES, MAX_RETRIES
                         ),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=0, max=5)),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=0,
+                            max=5,
+                            mode=selector.NumberSelectorMode.BOX,
+                        )
+                    ),
                 }
             ),
         )

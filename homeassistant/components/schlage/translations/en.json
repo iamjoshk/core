@@ -1,26 +1,26 @@
 {
   "config": {
     "abort": {
-      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
+      "already_configured": "Already configured. Only a single configuration possible.",
+      "reauth_successful": "Re-authentication was successful",
       "wrong_account": "The user credentials provided do not match this Schlage account."
     },
     "error": {
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
     },
     "step": {
       "reauth_confirm": {
         "data": {
-          "password": "[%key:common::config_flow::data::password%]"
+          "password": "Password"
         },
         "description": "The Schlage integration needs to re-authenticate your account",
-        "title": "[%key:common::config_flow::title::reauth%]"
+        "title": "Reauthenticate Integration"
       },
       "user": {
         "data": {
-          "password": "[%key:common::config_flow::data::password%]",
-          "username": "[%key:common::config_flow::data::username%]"
+          "password": "Password",
+          "username": "Username"
         }
       }
     }
@@ -46,7 +46,7 @@
       "auto_lock_time": {
         "name": "Auto-lock time",
         "state": {
-          "0": "[%key:common::state::disabled%]",
+          "0": "Disabled",
           "5": "5 seconds",
           "15": "15 seconds",
           "30": "30 seconds",
