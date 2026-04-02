@@ -9,10 +9,18 @@ import pyschlage
 from pyschlage.exceptions import NotAuthorizedError
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.helpers import selector
 
-from .const import DOMAIN, LOGGER
+from .const import (
+    CONF_MAX_RETRIES,
+    CONF_RETRY_DELAY,
+    MAX_RETRIES,
+    RETRY_DELAY,
+    DOMAIN,
+    LOGGER,
+)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {vol.Required(CONF_USERNAME): str, vol.Required(CONF_PASSWORD): str}
@@ -94,6 +102,48 @@ class SchlageConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+class SchlageOptionsFlowHandler(OptionsFlow):
+    """Handle Schlage options."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_RETRY_DELAY,
+                        default=self.config_entry.options.get(
+                            CONF_RETRY_DELAY, RETRY_DELAY
+                        ),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1,
+                            max=30,
+                            mode=selector.NumberSelectorMode.BOX,
+                            unit_of_measurement="seconds",
+                        )
+                    ),
+                    vol.Optional(
+                        CONF_MAX_RETRIES,
+                        default=self.config_entry.options.get(
+                            CONF_MAX_RETRIES, MAX_RETRIES
+                        ),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=0,
+                            max=5,
+                            mode=selector.NumberSelectorMode.BOX,
+                        )
+                    ),
+                }
+            ),
+        )
 
 def _authenticate(username: str, password: str) -> tuple[str | None, dict[str, str]]:
     """Authenticate with the Schlage API."""

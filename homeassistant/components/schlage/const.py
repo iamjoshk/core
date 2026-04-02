@@ -11,3 +11,8 @@ UPDATE_INTERVAL = timedelta(seconds=30)
 SERVICE_ADD_CODE = "add_code"
 SERVICE_DELETE_CODE = "delete_code"
 SERVICE_GET_CODES = "get_codes"
+
+CONF_RETRY_DELAY = "retry_delay"
+CONF_MAX_RETRIES = "max_retries"
+RETRY_DELAY = 5  # seconds
+MAX_RETRIES = 1

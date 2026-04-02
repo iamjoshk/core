@@ -101,5 +101,16 @@
       "description": "Retrieves all PIN codes from a lock.",
       "name": "Get PIN codes"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "retry_delay": "Retry delay (1 to 30 seconds)",
+          "max_retries": "Maximum retries (1 to 5 attempts)"
+        },
+        "description": "Configure retry behavior when fetching lock data fails"
+      }
+    }
   }
 }
