@@ -39,6 +39,7 @@ from homeassistant.helpers.reload import (
     async_integration_yaml_config,
     async_reload_integration_platforms,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util.async_ import create_eager_task
@@ -134,12 +135,13 @@ async def _async_process_config(hass: HomeAssistant, config: ConfigType) -> bool
                 )
                 load_coroutines.append(load_coroutine)
 
-    if refresh_coroutines:
-        await asyncio.gather(*(create_eager_task(coro) for coro in refresh_coroutines))
+    async def _async_finish_startup(_: HomeAssistant) -> None:
+        if refresh_coroutines:
+            await asyncio.gather(*(create_eager_task(coro) for coro in refresh_coroutines))
+        if load_coroutines:
+            await asyncio.gather(*(create_eager_task(coro) for coro in load_coroutines))
 
-    if load_coroutines:
-        await asyncio.gather(*(create_eager_task(coro) for coro in load_coroutines))
-
+    async_at_started(hass, _async_finish_startup)
     return True
 
 
